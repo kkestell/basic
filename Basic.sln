@@ -1,10 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Basic", "Basic\Basic.csproj", "{2C267CE6-6506-4B7F-B15E-0361886F305C}"
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34316.72
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Basic", "Basic\Basic.csproj", "{2C267CE6-6506-4B7F-B15E-0361886F305C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Basic.GUI", "Basic.GUI\Basic.GUI.csproj", "{7BA53161-0285-4764-9AD7-9BC6852A956C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Basic.GUI", "Basic.GUI\Basic.GUI.csproj", "{7BA53161-0285-4764-9AD7-9BC6852A956C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Basic.CLI", "Basic.CLI\Basic.CLI.csproj", "{C23A580A-05F2-43D8-A302-C68F3854AA21}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Basic.CLI", "Basic.CLI\Basic.CLI.csproj", "{C23A580A-05F2-43D8-A302-C68F3854AA21}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Basic.Tests", "Basic.Tests\Basic.Tests.csproj", "{B2970B08-A7B0-4403-A808-67BD6A8AD5B8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,5 +29,12 @@ Global
 		{C23A580A-05F2-43D8-A302-C68F3854AA21}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C23A580A-05F2-43D8-A302-C68F3854AA21}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C23A580A-05F2-43D8-A302-C68F3854AA21}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B2970B08-A7B0-4403-A808-67BD6A8AD5B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B2970B08-A7B0-4403-A808-67BD6A8AD5B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B2970B08-A7B0-4403-A808-67BD6A8AD5B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B2970B08-A7B0-4403-A808-67BD6A8AD5B8}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal
