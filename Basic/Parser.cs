@@ -46,6 +46,11 @@ public class Parser
             return ParseWhile();
         }
 
+        if (_currentToken.Type == TokenType.Break)
+        {
+            return ParseBreak();
+        }
+
         var location = BuildLocation();
         var expr = ParseExpression();
         return new ExpressionStatement(expr, location);
@@ -156,6 +161,13 @@ public class Parser
         ConsumeToken(TokenType.End);
         ConsumeToken(TokenType.While);
         return new While(condition, body, location);
+    }
+
+    public Statement ParseBreak()
+    {
+        var location = BuildLocation();
+        ConsumeToken(TokenType.Break);
+        return new Break(location);
     }
     
     private Expression ParseExpression()

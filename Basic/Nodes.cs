@@ -16,6 +16,8 @@ public record ForRange(string Name, Expression Start, Expression End, Statement 
 
 public record While(Expression Condition, Statement Body, Location Location) : Statement(Location);
 
+public record Break(Location Location) : Statement(Location);
+
 public record ExpressionStatement(Expression Expression, Location Location) : Statement(Location);
 
 public record UnaryExpression(TokenType Operator, Expression Operand, Location Location) : Expression(Location);
@@ -31,5 +33,4 @@ public record Boolean(bool Value, Location Location) : Expression(Location);
 public record Identifier(string Value, Location Location) : Expression(Location);
 
 public record CallExpression(string Name, List<Expression> Arguments, Location Location) : Expression(Location);
-
 

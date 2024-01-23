@@ -16,24 +16,24 @@ public class Interpreter
     
     public async Task ExecuteStatement(Statement statement, CancellationToken stoppingToken = default)
     {
-        await Task.Run(() =>
+        await Task.Run(async () =>
         {
             switch (statement)
             {
                 case Block block:
-                    ExecuteBlock(block, stoppingToken);
+                    await ExecuteBlock(block, stoppingToken);
                     break;
                 case Assignment assignment:
                     ExecuteAssignment(assignment, stoppingToken);
                     break;
                 case If @if:
-                    ExecuteIf(@if, stoppingToken);
+                    await ExecuteIf(@if, stoppingToken);
                     break;
                 case ForRange forRange:
-                    ExecuteForRange(forRange, stoppingToken);
+                    await ExecuteForRange(forRange, stoppingToken);
                     break;
                 case While @while:
-                    ExecuteWhile(@while, stoppingToken);
+                    await ExecuteWhile(@while, stoppingToken);
                     break;
                 case ExpressionStatement call:
                     ExecuteExpressionStatement(call, stoppingToken);
@@ -44,11 +44,11 @@ public class Interpreter
         }, stoppingToken);
     }
     
-    private void ExecuteBlock(Block block, CancellationToken stoppingToken)
+    private async Task ExecuteBlock(Block block, CancellationToken stoppingToken)
     {
         foreach (var statement in block.Statements)
         {
-            ExecuteStatement(statement, stoppingToken);
+            await ExecuteStatement(statement, stoppingToken);
         }
     }
     
@@ -58,7 +58,7 @@ public class Interpreter
         CurrentEnvironment.SetVariable(assignment.Name, value);
     }
 
-    private void ExecuteIf(If @if, CancellationToken stoppingToken)
+    private async Task ExecuteIf(If @if, CancellationToken stoppingToken)
     {
         var condition = EvaluateExpression(@if.Condition, stoppingToken);
         
@@ -69,11 +69,11 @@ public class Interpreter
         {
             if (boolValue)
             {
-                ExecuteStatement(@if.Then, stoppingToken);
+                await ExecuteStatement(@if.Then, stoppingToken);
             }
             else if (@if.Else is not null)
             {
-                ExecuteStatement(@if.Else, stoppingToken);
+                await ExecuteStatement(@if.Else, stoppingToken);
             }
             
             return;
@@ -82,7 +82,7 @@ public class Interpreter
         throw new Exception("Expected boolean");
     }
     
-    private void ExecuteForRange(ForRange forRange, CancellationToken stoppingToken)
+    private async Task ExecuteForRange(ForRange forRange, CancellationToken stoppingToken)
     {
         var start = EvaluateExpression(forRange.Start, stoppingToken);
         var end = EvaluateExpression(forRange.End, stoppingToken);
@@ -98,7 +98,7 @@ public class Interpreter
             for (var i = startDoubleValue; i <= endDoubleValue; i++)
             {
                 CurrentEnvironment.SetVariable(forRange.Name, new SingleValueObj(i.ToString()));
-                ExecuteStatement(forRange.Body, stoppingToken);
+                await ExecuteStatement(forRange.Body, stoppingToken);
             }
             
             return;
@@ -107,7 +107,7 @@ public class Interpreter
         throw new Exception("Expected number");
     }
 
-    private void ExecuteWhile(While @while, CancellationToken stoppingToken)
+    private async Task ExecuteWhile(While @while, CancellationToken stoppingToken)
     {
         while (true)
         {
@@ -121,7 +121,7 @@ public class Interpreter
                 if (!boolValue)
                     break;
                 
-                ExecuteStatement(@while.Body, stoppingToken);
+                await ExecuteStatement(@while.Body, stoppingToken);
                 continue;
             }
             
@@ -146,137 +146,6 @@ public class Interpreter
             
             Console.WriteLine();
             return new NullObj();
-        }
-
-        if (call.Name == "clear")
-        {
-            _window.Clear();
-            return new NullObj();
-        }
-
-        if (call.Name == "present")
-        {
-            _window.Present();
-            return new NullObj();
-        }
-        
-        if (call.Name == "drawCircle")
-        {
-            if (call.Arguments.Count != 3)
-                throw new Exception("Expected 3 arguments");
-            
-            var x = EvaluateExpression(call.Arguments[0], stoppingToken);
-            var y = EvaluateExpression(call.Arguments[1], stoppingToken);
-            var r = EvaluateExpression(call.Arguments[2], stoppingToken);
-            
-            if (x is not SingleValueObj xSingleValueObj)
-                throw new Exception("Expected single value object");
-
-            if (y is not SingleValueObj ySingleValueObj)
-                throw new Exception("Expected single value object");
-
-            if (r is not SingleValueObj rSingleValueObj)
-                throw new Exception("Expected single value object");
-
-            if (int.TryParse(xSingleValueObj.Value, out var xIntValue) && int.TryParse(ySingleValueObj.Value, out var yIntValue) && int.TryParse(rSingleValueObj.Value, out var rIntValue))
-            {
-                _window.DrawCircle(xIntValue, yIntValue, rIntValue);
-                return new NullObj();
-            }
-            
-            throw new Exception("Expected number");
-        }
-        
-        if (call.Name == "drawText")
-        {
-            if (call.Arguments.Count != 3)
-                throw new Exception("Expected 3 arguments");
-            
-            var x = EvaluateExpression(call.Arguments[0], stoppingToken);
-            var y = EvaluateExpression(call.Arguments[1], stoppingToken);
-            var text = EvaluateExpression(call.Arguments[2], stoppingToken);
-            
-            if (x is not SingleValueObj xSingleValueObj)
-                throw new Exception("Expected single value object");
-
-            if (y is not SingleValueObj ySingleValueObj)
-                throw new Exception("Expected single value object");
-
-            if (text is not SingleValueObj textSingleValueObj)
-                throw new Exception("Expected single value object");
-
-            if (int.TryParse(xSingleValueObj.Value, out var xIntValue) && int.TryParse(ySingleValueObj.Value, out var yIntValue))
-            {
-                _window.DrawText(xIntValue, yIntValue, textSingleValueObj.Value);
-                return new NullObj();
-            }
-            
-            throw new Exception("Expected number");
-        }
-
-        if (call.Name == "drawSprite")
-        {
-            if (call.Arguments.Count != 3)
-                throw new Exception("Expected 3 arguments");
-            
-            var filename = EvaluateExpression(call.Arguments[0], stoppingToken);
-            var x = EvaluateExpression(call.Arguments[1], stoppingToken);
-            var y = EvaluateExpression(call.Arguments[2], stoppingToken);
-            
-            if (filename is not SingleValueObj filenameSingleValueObj)
-                throw new Exception("Expected single value object");
-
-            if (x is not SingleValueObj xSingleValueObj)
-                throw new Exception("Expected single value object");
-
-            if (y is not SingleValueObj ySingleValueObj)
-                throw new Exception("Expected single value object");
-
-            if (int.TryParse(xSingleValueObj.Value, out var xIntValue) && int.TryParse(ySingleValueObj.Value, out var yIntValue))
-            {
-                _window.DrawSprite(filenameSingleValueObj.Value, xIntValue, yIntValue);
-                return new NullObj();
-            }
-            
-            throw new Exception("Expected number");
-        }
-
-        if (call.Name == "playSound")
-        {
-            if (call.Arguments.Count != 1)
-                throw new Exception("Expected 1 argument");
-            
-            var filename = EvaluateExpression(call.Arguments[0], stoppingToken);
-            
-            if (filename is not SingleValueObj filenameSingleValueObj)
-                throw new Exception("Expected single value object");
-
-            _window.PlaySound(filenameSingleValueObj.Value);
-            return new NullObj();
-        }
-
-        if (call.Name == "random")
-        {
-            if (call.Arguments.Count != 2)
-                throw new Exception("Expected 2 arguments");
-            
-            var min = EvaluateExpression(call.Arguments[0], stoppingToken);
-            var max = EvaluateExpression(call.Arguments[1], stoppingToken);
-            
-            if (min is not SingleValueObj minSingleValueObj)
-                throw new Exception("Expected single value object");
-
-            if (max is not SingleValueObj maxSingleValueObj)
-                throw new Exception("Expected single value object");
-
-            if (int.TryParse(minSingleValueObj.Value, out var minIntValue) && int.TryParse(maxSingleValueObj.Value, out var maxIntValue))
-            {
-                var random = new Random();
-                var value = random.Next(minIntValue, maxIntValue + 1);
-                return new SingleValueObj(value.ToString());
-            }
-            
-            throw new Exception("Expected number");
         }
         
         throw new NotImplementedException();
