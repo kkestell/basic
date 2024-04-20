@@ -136,7 +136,7 @@ public class Interpreter
 
     private Obj EvaluateCallExpression(CallExpression call, CancellationToken stoppingToken)
     {
-        if (call.Name == "print")
+        if (call.Name == "PRINT")
         {
             foreach (var argument in call.Arguments)
             {
