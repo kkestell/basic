@@ -1,10 +1,16 @@
-﻿namespace Basic.CLI;
+namespace Basic.CLI;
 
-public static class Program
+public class Repl
 {
-    public static async Task Main()
+    private readonly Interpreter _interpreter;
+    
+    public Repl()
     {
-        var interpreter = new Interpreter();
+        _interpreter = new Interpreter();
+    }
+    
+    public void Run()
+    {
         while (true)
         {
             Console.Write("> ");
@@ -24,7 +30,7 @@ public static class Program
                 
                 var stoppingToken = new CancellationTokenSource();
                 
-                var task = interpreter.ExecuteStatement(statement, stoppingToken.Token);
+                var task = _interpreter.ExecuteStatement(statement, stoppingToken.Token);
                 
                 while (!task.IsCompleted)
                 {
@@ -42,5 +48,47 @@ public static class Program
                 break;
             }
         }
+    }
+}
+
+public static class Program
+{
+    public static async Task Main(string[] args)
+    {
+        if (args.Length > 0)
+        {
+            var input = await File.ReadAllTextAsync(args[0]);
+            var lexer = new Lexer(input, args[0]);
+            var parser = new Parser(lexer);
+            var interpreter = new Interpreter();
+
+            try
+            {
+                while (true)
+                {
+                    var statement = parser.ParseStatement();
+                    if (statement is null)
+                        break;
+                    
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.WriteLine(statement.Location.LineContent);
+                    Console.ResetColor();
+
+                    await interpreter.ExecuteStatement(statement);
+                }
+            }
+            catch (SyntaxError e)
+            {
+                Console.WriteLine(e.Message);
+            }
+            
+            Console.WriteLine("Press any key to exit.");
+            Console.ReadKey();
+            
+            return;
+        }
+        
+        var repl = new Repl();
+        repl.Run();
     }
 }

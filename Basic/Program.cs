@@ -1,4 +1,4 @@
-﻿namespace Basic;
+namespace Basic;
 
 public static class Program
 {
