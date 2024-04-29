@@ -4,44 +4,52 @@ namespace Basic;
 
 public class Interpreter
 {
-    private readonly IWindow _window;
     private readonly Stack<Environment> _environments = new();
     private Environment CurrentEnvironment => _environments.Peek();
     
-    public Interpreter(IWindow? window = null)
+    public Interpreter()
     {
-        _window = window;
         PushEnvironment();
     }
     
     public async Task ExecuteStatement(Statement statement, CancellationToken stoppingToken = default)
     {
-        await Task.Run(async () =>
+        switch (statement)
         {
-            switch (statement)
-            {
-                case Block block:
-                    await ExecuteBlock(block, stoppingToken);
-                    break;
-                case Assignment assignment:
-                    ExecuteAssignment(assignment, stoppingToken);
-                    break;
-                case If @if:
-                    await ExecuteIf(@if, stoppingToken);
-                    break;
-                case ForRange forRange:
-                    await ExecuteForRange(forRange, stoppingToken);
-                    break;
-                case While @while:
-                    await ExecuteWhile(@while, stoppingToken);
-                    break;
-                case ExpressionStatement call:
-                    ExecuteExpressionStatement(call, stoppingToken);
-                    break;
-                default:
-                    throw new NotImplementedException();
-            }
-        }, stoppingToken);
+            case FunctionDefinition functionDefinition:
+                ExecuteFunctionDefinition(functionDefinition, stoppingToken);
+                break;
+            case Block block:
+                await ExecuteBlock(block, stoppingToken);
+                break;
+            case Assignment assignment:
+                ExecuteAssignment(assignment, stoppingToken);
+                break;
+            case If @if:
+                await ExecuteIf(@if, stoppingToken);
+                break;
+            case ForRange forRange:
+                await ExecuteForRange(forRange, stoppingToken);
+                break;
+            case While @while:
+                await ExecuteWhile(@while, stoppingToken);
+                break;
+            case ExpressionStatement call:
+                ExecuteExpressionStatement(call, stoppingToken);
+                break;
+            case Return @return:
+                ExecuteReturn(@return, stoppingToken);
+                break;
+            case Break _:
+                throw new BreakException();
+            default:
+                throw new NotImplementedException();
+        }
+    }
+    
+    private void ExecuteFunctionDefinition(FunctionDefinition functionDefinition, CancellationToken _)
+    {
+        CurrentEnvironment.SetVariable(functionDefinition.Name, new FunctionObj(functionDefinition.Parameters, functionDefinition.Body, CurrentEnvironment));
     }
     
     private async Task ExecuteBlock(Block block, CancellationToken stoppingToken)
@@ -65,21 +73,17 @@ public class Interpreter
         if (condition is not SingleValueObj singleValueObj)
             throw new Exception("Expected single value object");
 
-        if (bool.TryParse(singleValueObj.Value, out var boolValue))
-        {
-            if (boolValue)
-            {
-                await ExecuteStatement(@if.Then, stoppingToken);
-            }
-            else if (@if.Else is not null)
-            {
-                await ExecuteStatement(@if.Else, stoppingToken);
-            }
-            
-            return;
-        }
+        if (!bool.TryParse(singleValueObj.Value, out var boolValue))
+            throw new Exception("Expected boolean");
         
-        throw new Exception("Expected boolean");
+        if (boolValue)
+        {
+            await ExecuteStatement(@if.Then, stoppingToken);
+        }
+        else if (@if.Else is not null)
+        {
+            await ExecuteStatement(@if.Else, stoppingToken);
+        }
     }
     
     private async Task ExecuteForRange(ForRange forRange, CancellationToken stoppingToken)
@@ -93,39 +97,38 @@ public class Interpreter
         if (end is not SingleValueObj endSingleValueObj)
             throw new Exception("Expected single value object");
 
-        if (double.TryParse(startSingleValueObj.Value, out var startDoubleValue) && double.TryParse(endSingleValueObj.Value, out var endDoubleValue))
-        {
-            for (var i = startDoubleValue; i <= endDoubleValue; i++)
-            {
-                CurrentEnvironment.SetVariable(forRange.Name, new SingleValueObj(i.ToString()));
-                await ExecuteStatement(forRange.Body, stoppingToken);
-            }
-            
-            return;
-        }
+        if (!double.TryParse(startSingleValueObj.Value, out var startDoubleValue) || !double.TryParse(endSingleValueObj.Value, out var endDoubleValue))
+            throw new Exception("Expected number");
         
-        throw new Exception("Expected number");
+        for (var i = startDoubleValue; i <= endDoubleValue; i++)
+        {
+            CurrentEnvironment.SetVariable(forRange.Name, new SingleValueObj(i.ToString()));
+            await ExecuteStatement(forRange.Body, stoppingToken);
+        }
     }
 
     private async Task ExecuteWhile(While @while, CancellationToken stoppingToken)
     {
-        while (true)
+        try
         {
-            var condition = EvaluateExpression(@while.Condition, stoppingToken);
-            
-            if (condition is not SingleValueObj singleValueObj)
-                throw new Exception("Expected single value object");
-
-            if (bool.TryParse(singleValueObj.Value, out var boolValue))
+            while (true)
             {
+                var condition = EvaluateExpression(@while.Condition, stoppingToken);
+
+                if (condition is not SingleValueObj singleValueObj)
+                    throw new Exception("Expected single value object");
+
+                if (!bool.TryParse(singleValueObj.Value, out var boolValue))
+                    throw new Exception("Expected boolean");
+                
                 if (!boolValue)
                     break;
-                
+
                 await ExecuteStatement(@while.Body, stoppingToken);
-                continue;
             }
-            
-            throw new Exception("Expected boolean");
+        }
+        catch (BreakException)
+        {
         }
     }
     
@@ -133,7 +136,53 @@ public class Interpreter
     {
         EvaluateExpression(expressionStatement.Expression, stoppingToken);
     }
+    
+    private void ExecuteReturn(Return @return, CancellationToken stoppingToken)
+    {
+        if (@return.Value is null)
+            throw new NotImplementedException();
+        
+        var value = EvaluateExpression(@return.Value, stoppingToken);
+        
+        throw new ReturnException(value);
+    }
 
+    private Obj CallFunction(string name, List<Expression> arguments, CancellationToken stoppingToken)
+    {
+        var functionObj = CurrentEnvironment.GetVariable(name);
+        
+        if (functionObj is not FunctionObj function)
+            throw new Exception("Expected function object");
+        
+        PushEnvironment();
+        
+        if (arguments.Count != function.Parameters.Count)
+            throw new Exception("Argument count mismatch");
+        
+        for (var i = 0; i < arguments.Count; i++)
+        {
+            var value = EvaluateExpression(arguments[i], stoppingToken);
+            CurrentEnvironment.SetVariable(function.Parameters[i], value);
+        }
+        
+        try
+        {
+            ExecuteStatement(function.Body, stoppingToken).Wait(stoppingToken);
+        }
+        catch (AggregateException ae)
+        {
+            if (ae.InnerException is ReturnException e)
+            {
+                PopEnvironment();
+                return e.Value ?? new NullObj();
+            }
+        }
+        
+        PopEnvironment();
+        return new NullObj();
+    }
+    
+    // FIXME: Make async
     private Obj EvaluateCallExpression(CallExpression call, CancellationToken stoppingToken)
     {
         if (call.Name == "PRINT")
@@ -148,7 +197,7 @@ public class Interpreter
             return new NullObj();
         }
         
-        throw new NotImplementedException();
+        return CallFunction(call.Name, call.Arguments, stoppingToken);
     }
 
     private Obj EvaluateExpression(Expression expression, CancellationToken stoppingToken)

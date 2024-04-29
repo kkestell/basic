@@ -34,3 +34,6 @@ public record Identifier(string Value, Location Location) : Expression(Location)
 
 public record CallExpression(string Name, List<Expression> Arguments, Location Location) : Expression(Location);
 
+public record FunctionDefinition(string Name, List<string> Parameters, Statement Body, Location Location) : Statement(Location);
+
+public record Return(Expression? Value, Location Location) : Statement(Location);

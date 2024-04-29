@@ -10,3 +10,5 @@ public record SingleValueObj(string Value) : Obj
 }
 
 public record ArrayObj(List<Obj> Values) : Obj;
+
+public record FunctionObj(List<string> Parameters, Statement Body, Environment Environment) : Obj;
