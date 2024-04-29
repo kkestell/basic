@@ -198,9 +198,9 @@ public class Lexer
             return new Token(TokenType.If, loc);
         }
 
-        if (identifier == "THEN")
+        if (identifier == "DO")
         {
-            return new Token(TokenType.Then, loc);
+            return new Token(TokenType.Do, loc);
         }
         
         if (identifier == "ELSE")

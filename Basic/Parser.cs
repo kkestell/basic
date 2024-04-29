@@ -51,6 +51,16 @@ public class Parser
             return ParseBreak();
         }
 
+        if (_currentToken.Type == TokenType.Def)
+        {
+            return ParseFunctionDefinition();
+        }
+        
+        if (_currentToken.Type == TokenType.Return)
+        {
+            return ParseReturn();
+        }
+
         var location = BuildLocation();
         var expr = ParseExpression();
         return new ExpressionStatement(expr, location);
@@ -101,7 +111,7 @@ public class Parser
         }
 
         var condition = ParseExpression();
-        ConsumeToken(TokenType.Then);
+        ConsumeToken(TokenType.Do);
         var body = ParseBlock();
     
         if (body is null)
@@ -127,13 +137,12 @@ public class Parser
         if (!isElif && !isNested)
         {
             ConsumeToken(TokenType.End);
-            ConsumeToken(TokenType.If);
         }
     
         return new If(condition, body, elseBlock, location);
     }
 
-    public Statement ParseFor()
+    private Statement ParseFor()
     {
         var location = BuildLocation();
         ConsumeToken(TokenType.For);
@@ -142,32 +151,65 @@ public class Parser
         var start = ParseExpression();
         ConsumeToken(TokenType.To);
         var end = ParseExpression();
-        ConsumeToken(TokenType.Then);
+        ConsumeToken(TokenType.Do);
         var body = ParseBlock();
         if (identifier.Value is not StringValue name)
             throw new SyntaxError("Token value should be a string", _currentToken.Location);
         ConsumeToken(TokenType.End);
-        ConsumeToken(TokenType.For);
         return new ForRange(name.Value, start, end, body, location);
     }
 
-    public Statement ParseWhile()
+    private Statement ParseWhile()
     {
         var location = BuildLocation();
         ConsumeToken(TokenType.While);
         var condition = ParseExpression();
-        ConsumeToken(TokenType.Then);
+        ConsumeToken(TokenType.Do);
         var body = ParseBlock();
         ConsumeToken(TokenType.End);
-        ConsumeToken(TokenType.While);
         return new While(condition, body, location);
     }
 
-    public Statement ParseBreak()
+    private Statement ParseBreak()
     {
         var location = BuildLocation();
         ConsumeToken(TokenType.Break);
         return new Break(location);
+    }
+
+    private Statement ParseFunctionDefinition()
+    {
+        var location = BuildLocation();
+        ConsumeToken(TokenType.Def);
+        var identifier = ConsumeToken(TokenType.Identifier);
+        if (identifier.Value is not StringValue name)
+            throw new SyntaxError("Token value should be a string", _currentToken.Location);
+        ConsumeToken(TokenType.LeftParen);
+        var parameters = new List<string>();
+        while (_currentToken.Type != TokenType.RightParen)
+        {
+            var parameter = ConsumeToken(TokenType.Identifier);
+            if (parameter.Value is not StringValue parameterName)
+                throw new SyntaxError("Token value should be a string", _currentToken.Location);
+            parameters.Add(parameterName.Value);
+            if (_currentToken.Type == TokenType.Comma)
+            {
+                ConsumeToken(TokenType.Comma);
+            }
+        }
+        ConsumeToken(TokenType.RightParen);
+        ConsumeToken(TokenType.Do);
+        var body = ParseBlock();
+        ConsumeToken(TokenType.End);
+        return new FunctionDefinition(name.Value, parameters, body, location);
+    }
+    
+    private Statement ParseReturn()
+    {
+        var location = BuildLocation();
+        ConsumeToken(TokenType.Return);
+        var expression = ParseExpression();
+        return new Return(expression, location);
     }
     
     private Expression ParseExpression()

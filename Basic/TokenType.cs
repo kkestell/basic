@@ -26,7 +26,7 @@ public enum TokenType
     AmpersandAmpersand,
     // Keywords
     If,
-    Then,
+    Do,
     Else,
     End,
     For,

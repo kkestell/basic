@@ -69,10 +69,6 @@ public static class Program
                     var statement = parser.ParseStatement();
                     if (statement is null)
                         break;
-                    
-                    Console.ForegroundColor = ConsoleColor.DarkGray;
-                    Console.WriteLine(statement.Location.LineContent);
-                    Console.ResetColor();
 
                     await interpreter.ExecuteStatement(statement);
                 }
@@ -81,9 +77,6 @@ public static class Program
             {
                 Console.WriteLine(e.Message);
             }
-            
-            Console.WriteLine("Press any key to exit.");
-            Console.ReadKey();
             
             return;
         }

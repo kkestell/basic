@@ -21,6 +21,18 @@ public class Environment
         throw new Exception($"Variable '{name}' not found.");
     }
     
+    public bool TryGetVariable(string name, out Obj value)
+    {
+        if (_variables.TryGetValue(name, out value))
+            return true;
+        
+        if (_parent is not null)
+            return _parent.TryGetVariable(name, out value);
+        
+        value = null!;
+        return false;
+    }
+    
     public void SetVariable(string name, Obj value)
     {
         _variables[name] = value;
